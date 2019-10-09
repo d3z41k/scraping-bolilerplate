@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -19,9 +18,6 @@ func NewRouter() http.Handler {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(60 * time.Second))
-
-	// Set up root handler
-	router.Get("/", HelloWorld)
 
 	// Set up API
 	router.Mount("/api/v1", v1.NewRouter())
