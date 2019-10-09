@@ -33,3 +33,43 @@ var SearchPhrase = func(w http.ResponseWriter, r *http.Request) {
 	resp["url"] = url
 	u.Respond(w, resp)
 }
+
+// SearchMetatag - search for metatag on the site
+var SearchMetatag = func(w http.ResponseWriter, r *http.Request) {
+	url := chi.URLParam(r, "url")
+	name := chi.URLParam(r, "name")
+	content := chi.URLParam(r, "content")
+	result := map[string]bool{
+		"name":    false,
+		"content": false,
+	}
+
+	c := colly.NewCollector()
+
+	c.OnHTML("meta[name]", func(e *colly.HTMLElement) {
+		n := e.Attr("name")
+		co := e.Attr("content")
+
+		if name == n {
+			result["name"] = true
+			if content == co {
+				result["content"] = true
+			}
+		}
+	})
+
+	c.Visit("http://" + url)
+
+	if result["name"] == false {
+		u.Respond(w, u.Message(404, false, "Metatag is not found"))
+		return
+	}
+	if result["content"] == false {
+		u.Respond(w, u.Message(404, false, "Invalid metatag content"))
+		return
+	}
+
+	resp := u.Message(200, true, "Ok")
+	resp["url"] = url
+	u.Respond(w, resp)
+}
