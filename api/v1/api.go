@@ -15,5 +15,6 @@ func NewRouter() http.Handler {
 	// Register the API routes
 	router.Get("/search-phrase/{url}/{phrase}", controllers.SearchPhrase)
 	router.Get("/search-tag/{url}/{name}/{content}", controllers.SearchMetatag)
+	router.Post("/search-data", controllers.SearchData)
 	return router
 }
