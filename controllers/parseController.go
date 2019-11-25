@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"github.com/d3z41k/scraping-boilerplate/models"
 	"github.com/d3z41k/scraping-boilerplate/services"
@@ -61,27 +62,37 @@ var SearchData = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(len(searchData))
+
 	for _, data := range searchData {
 
-		var rd = models.ResultData{}
-		var rt = map[string]bool{}
+		go func(d models.SearchData) {
+			defer wg.Done()
 
-		rd.URL = data.URL
-		rt = services.SearchMetatag(data.URL, data.Name, data.Content)
-		rt["phrase"] = services.SearchPhrase(data.URL, data.Phrase)
-		s := true
+			var rd = models.ResultData{}
+			var rt = map[string]bool{}
 
-		for item, status := range rt {
-			if status == false {
-				s = false
+			rd.URL = d.URL
+			rt = services.SearchMetatag(d.URL, d.Name, d.Content)
+			rt["phrase"] = services.SearchPhrase(d.URL, d.Phrase)
+			s := true
+
+			for item, status := range rt {
+				if status == false {
+					s = false
+				}
+				m := u.RsultMessage(item, status)
+
+				rd.Results = append(rd.Results, u.Result(item, status, m))
 			}
-			m := u.RsultMessage(item, status)
+			rd.Status = s
 
-			rd.Results = append(rd.Results, u.Result(item, status, m))
-		}
-		rd.Status = s
-		resultData = append(resultData, rd)
+			resultData = append(resultData, rd)
+		}(data)
 	}
+
+	wg.Wait()
 
 	resp := u.Message(200, true, "Ok")
 	resp["result"] = resultData
